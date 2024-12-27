@@ -4,6 +4,7 @@ from typing import List, Dict, Set, FrozenSet
 
 random.seed(0)
 
+
 class BaseAssigner:
     """グループ割り当ての基底クラス
 
@@ -19,7 +20,10 @@ class BaseAssigner:
         room_size (int): 各部屋の基本サイズ（参加者総数を部屋数で割った値）
         remainder (int): 参加者を部屋に均等に分けた後の余り
     """
-    def __init__(self, total_participants: int, total_rooms: int, total_rounds: int) -> None:
+
+    def __init__(
+        self, total_participants: int, total_rooms: int, total_rounds: int
+    ) -> None:
         self.total_participants: int = total_participants
         self.total_rooms: int = total_rooms
         self.total_rounds: int = total_rounds
@@ -38,6 +42,7 @@ class BaseAssigner:
         """
         return self.room_size + (1 if room <= self.remainder else 0)
 
+
 class RandomAssigner(BaseAssigner):
     """ランダムな割り当て
 
@@ -48,7 +53,10 @@ class RandomAssigner(BaseAssigner):
         total_rooms (int): 部屋の総数
         total_rounds (int): ラウンドの総数
     """
-    def __init__(self, total_participants: int, total_rooms: int, total_rounds: int) -> None:
+
+    def __init__(
+        self, total_participants: int, total_rooms: int, total_rounds: int
+    ) -> None:
         super().__init__(total_participants, total_rooms, total_rounds)
 
     def generate_assignments(self) -> List[Dict[int, List[int]]]:
@@ -67,11 +75,14 @@ class RandomAssigner(BaseAssigner):
 
             for room in range(1, self.total_rooms + 1):
                 current_size: int = self._get_room_size(room)
-                round_assignment[room].extend(self.participants[idx:idx + current_size])
+                round_assignment[room].extend(
+                    self.participants[idx : idx + current_size]
+                )
                 idx += current_size
 
             results.append(round_assignment)
         return results
+
 
 class GreedyAssigner(BaseAssigner):
     """Greedy法による割当
@@ -86,7 +97,10 @@ class GreedyAssigner(BaseAssigner):
     Attributes:
         pair_history (defaultdict): 参加者のペアとその発生回数を記録する辞書
     """
-    def __init__(self, total_participants: int, total_rooms: int, total_rounds: int) -> None:
+
+    def __init__(
+        self, total_participants: int, total_rooms: int, total_rounds: int
+    ) -> None:
         super().__init__(total_participants, total_rooms, total_rounds)
         self.pair_history: Dict[FrozenSet[int], int] = defaultdict(int)
 
@@ -100,7 +114,9 @@ class GreedyAssigner(BaseAssigner):
         Returns:
             int: ペアの発生回数の合計
         """
-        return sum(self.pair_history[frozenset((candidate, member))] for member in room_members)
+        return sum(
+            self.pair_history[frozenset((candidate, member))] for member in room_members
+        )
 
     def _update_pair_history(self, candidate: int, room_members: List[int]) -> None:
         """ペア履歴を更新
@@ -113,7 +129,9 @@ class GreedyAssigner(BaseAssigner):
             if member != candidate:
                 self.pair_history[frozenset((candidate, member))] += 1
 
-    def _select_next_candidate(self, available_candidates: List[int], room_members: List[int]) -> int:
+    def _select_next_candidate(
+        self, available_candidates: List[int], room_members: List[int]
+    ) -> int:
         """次の候補者を選択
 
         既存メンバーとのペア発生回数が最小となる候補者を選択する。
@@ -128,11 +146,11 @@ class GreedyAssigner(BaseAssigner):
         if not available_candidates:
             # 候補者がいない場合は、未割当の参加者からランダムに選択
             return random.choice(list(set(self.participants) - set(room_members)))
-        
+
         # ペア履歴スコアが最小となる候補を選択
         return min(
             available_candidates,
-            key=lambda x: self._calculate_pair_score(x, room_members)
+            key=lambda x: self._calculate_pair_score(x, room_members),
         )
 
     def generate_assignments(self) -> List[Dict[int, List[int]]]:
@@ -156,10 +174,9 @@ class GreedyAssigner(BaseAssigner):
 
                 while len(round_assignment[room]) < current_size:
                     candidate: int = self._select_next_candidate(
-                        participants_copy,
-                        round_assignment[room]
+                        participants_copy, round_assignment[room]
                     )
-                    
+
                     if candidate in participants_copy:
                         participants_copy.remove(candidate)
 

@@ -1,10 +1,12 @@
 from itertools import combinations
 from collections import defaultdict, Counter
-from typing import Dict, List, FrozenSet, TypedDict, Counter as CounterType
+from typing import Dict, List, FrozenSet, Counter as CounterType
 import numpy as np
 
 
-def calc_pair_frequencies(assignments: List[Dict[int, List[int]]]) -> Dict[FrozenSet[int], int]:
+def calc_pair_frequencies(
+    assignments: List[Dict[int, List[int]]],
+) -> Dict[FrozenSet[int], int]:
     """ペアの出現頻度を計算
 
     Args:
@@ -25,7 +27,10 @@ def calc_pair_frequencies(assignments: List[Dict[int, List[int]]]) -> Dict[Froze
 
     return pair_frequencies
 
-def count_pair_frequency_distribution(pair_frequencies: Dict[FrozenSet[int], int]) -> CounterType[int]:
+
+def count_pair_frequency_distribution(
+    pair_frequencies: Dict[FrozenSet[int], int],
+) -> CounterType[int]:
     """ペアの出現回数の分布を集計
 
     Args:
@@ -40,7 +45,10 @@ def count_pair_frequency_distribution(pair_frequencies: Dict[FrozenSet[int], int
     """
     return Counter(pair_frequencies.values())
 
-def evaluate_pair_fairness(pair_frequencies: Dict[FrozenSet[int], int]) -> Dict[str, float]:
+
+def evaluate_pair_fairness(
+    pair_frequencies: Dict[FrozenSet[int], int],
+) -> Dict[str, float]:
     """ペアの公平性を評価
 
     Args:
@@ -54,7 +62,4 @@ def evaluate_pair_fairness(pair_frequencies: Dict[FrozenSet[int], int]) -> Dict[
             std_dev: ペア出現回数の標準偏差
     """
     frequencies: List[int] = list(pair_frequencies.values())
-    return {
-        "mean": np.mean(frequencies),
-        "std_dev": np.std(frequencies)
-    }
+    return {"mean": np.mean(frequencies), "std_dev": np.std(frequencies)}
