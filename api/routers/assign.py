@@ -23,7 +23,7 @@ async def assign_greedy(request: AssignRequest) -> AssignResponse:
         return AssignResponse(assignments=assignments)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="内部サーバーエラーが発生しました")
 
 
@@ -44,5 +44,5 @@ async def assign_random(request: AssignRequest) -> AssignResponse:
         return AssignResponse(assignments=assignments)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="内部サーバーエラーが発生しました")
