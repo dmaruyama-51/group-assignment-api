@@ -1,0 +1,66 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - feature/#1
+  
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REGION: ${{ vars.REGION }}
+      REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
+      API_NAME: ${{ vars.API_NAME }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Check and Create Repository
+        run: |
+          if ! gcloud artifacts repositories describe ${{ env.REPOSITORY_NAME }} \
+            --location=${{ env.REGION }} > /dev/null 2>&1; then
+            echo "Creating new repository: ${{ env.REPOSITORY_NAME }}"
+            gcloud artifacts repositories create ${{ env.REPOSITORY_NAME }} \
+              --repository-format=docker \
+              --location=${{ env.REGION }} \
+              --async
+          else
+            echo "Repository ${{ env.REPOSITORY_NAME }} already exists. Skipping creation."
+          fi
+
+      - name: Build and Push Image
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.API_NAME }} .
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.API_NAME }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.API_NAME }} \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.API_NAME }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --port 8080 \
+            --allow-unauthenticated 
