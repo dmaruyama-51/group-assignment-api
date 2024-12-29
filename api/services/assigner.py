@@ -3,6 +3,7 @@ from collections import defaultdict
 import itertools
 import pulp
 from typing import List, Dict, Set, FrozenSet
+from fastapi import HTTPException
 
 random.seed(0)
 
@@ -191,6 +192,7 @@ class GreedyAssigner(BaseAssigner):
 
         return results
 
+
 class OptimizationAssigner(BaseAssigner):
     """数理最適化による割り当て
 
@@ -216,27 +218,40 @@ class OptimizationAssigner(BaseAssigner):
         participants = self.participants[:]
         random.shuffle(participants)
         assignment = {
-            j+1: participants[j * self.room_size: (j + 1) * self.room_size]
+            j + 1: participants[j * self.room_size : (j + 1) * self.room_size]
             for j in range(self.total_rooms)
         }
-        
-        remainder = participants[self.total_rooms * self.room_size:]
+
+        remainder = participants[self.total_rooms * self.room_size :]
         for i, participant in enumerate(remainder):
             assignment[(i % self.total_rooms) + 1].append(participant)
         return assignment
 
     def _optimize_round(self) -> Dict[int, List[int]]:
-        """1ラウンド分の最適化"""
+        """1ラウンド分の最適化
+
+        Returns:
+            Dict[int, List[int]]: 部屋割り当て結果
+
+        Raises:
+            HTTPException: 最適解が見つからない場合
+        """
         rooms = list(range(self.total_rooms))
-        
+
         problem = pulp.LpProblem("Optimize_Round", pulp.LpMinimize)
-        
+
         # 変数定義
-        x = {(i, j): pulp.LpVariable(f"x_{i}_{j}", 0, 1, pulp.LpBinary)
-             for i in self.participants for j in rooms}
-        y = {(i1, i2, j): pulp.LpVariable(f"y_{i1}_{i2}_{j}", 0, 1, pulp.LpBinary)
-             for i1, i2 in itertools.combinations(self.participants, 2) for j in rooms}
-        
+        x = {
+            (i, j): pulp.LpVariable(f"x_{i}_{j}", 0, 1, pulp.LpBinary)
+            for i in self.participants
+            for j in rooms
+        }
+        y = {
+            (i1, i2, j): pulp.LpVariable(f"y_{i1}_{i2}_{j}", 0, 1, pulp.LpBinary)
+            for i1, i2 in itertools.combinations(self.participants, 2)
+            for j in rooms
+        }
+
         # 目的関数: 過去に割り当てられたペアの重複を最小化
         problem += pulp.lpSum(
             (1 if (i1, i2) in self.history else 0) * y[i1, i2, j]
@@ -251,7 +266,9 @@ class OptimizationAssigner(BaseAssigner):
         # 制約 2: 各ルームの人数は均等またはほぼ均等
         for j in rooms:
             problem += pulp.lpSum(x[i, j] for i in self.participants) >= self.room_size
-            problem += pulp.lpSum(x[i, j] for i in self.participants) <= self.room_size + 1
+            problem += (
+                pulp.lpSum(x[i, j] for i in self.participants) <= self.room_size + 1
+            )
 
         # 制約 3: 補助変数 y の定義
         for i1, i2 in itertools.combinations(self.participants, 2):
@@ -261,12 +278,17 @@ class OptimizationAssigner(BaseAssigner):
                 problem += y[i1, i2, j] >= x[i1, j] + x[i2, j] - 1
 
         problem.solve()
-        
+
         if problem.status == pulp.LpStatusOptimal:
-            return {j+1: [
-                i for i in self.participants if pulp.value(x[i, j]) == 1
-            ] for j in rooms}
-        return None
+            return {
+                j + 1: [i for i in self.participants if pulp.value(x[i, j]) == 1]
+                for j in rooms
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="最適な部屋割り当てを見つけることができませんでした。条件を変更して再度お試しください。",
+            )
 
     def generate_assignments(self) -> List[Dict[int, List[int]]]:
         """全ラウンドの部屋割り当てを生成
@@ -275,20 +297,20 @@ class OptimizationAssigner(BaseAssigner):
             List[Dict[int, List[int]]]: 各ラウンドの部屋割り当て結果
         """
         assignments = []
-        
+
         # 第1ラウンド: ランダム割当
         first_round = self._generate_random_assignment()
         assignments.append(first_round)
-        
+
         # 第1ラウンドのペアを記録
         for members in first_round.values():
             for i1, i2 in itertools.combinations(members, 2):
                 self.history.add((i1, i2))
-        
+
         # 第2ラウンド以降: 最適化
         for t in range(1, self.total_rounds):
             assignment = self._optimize_round()
-            
+
             if assignment:
                 assignments.append(assignment)
                 for members in assignment.values():
@@ -297,5 +319,5 @@ class OptimizationAssigner(BaseAssigner):
             else:
                 print(f"Round {t+1} could not be optimized.")
                 break
-                
+
         return assignments
