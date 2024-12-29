@@ -2,7 +2,7 @@
 
 ## Description
 
-This project provides an API designed to facilitate group assignments in seminars and study sessions, enabling participants to interact with as many people as possible during group activities.
+This project provides an API to optimize grouping in seminars and study sessions. The groupings will allow participants to interact with as many different participants as possible through multiple rounds.
 
 ## Features
 - Assign members to groups for multiple rounds of group work.
