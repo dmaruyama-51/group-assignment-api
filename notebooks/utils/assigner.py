@@ -72,14 +72,12 @@ class RandomAssigner(BaseAssigner):
         results: List[Dict[int, List[int]]] = []
         for _ in range(self.total_rounds):
             random.shuffle(self.participants)
-            round_assignment: Dict[int, List[int]] = defaultdict(list)
+            round_assignment: Dict[int, List[int]] = {}
             idx: int = 0
 
             for room in range(1, self.total_rooms + 1):
                 current_size: int = self._get_room_size(room)
-                round_assignment[room].extend(
-                    self.participants[idx : idx + current_size]
-                )
+                round_assignment[room] = self.participants[idx : idx + current_size]
                 idx += current_size
 
             results.append(round_assignment)
@@ -166,12 +164,13 @@ class GreedyAssigner(BaseAssigner):
         results: List[Dict[int, List[int]]] = []
 
         for _ in range(self.total_rounds):
-            round_assignment: Dict[int, List[int]] = defaultdict(list)
+            round_assignment: Dict[int, List[int]] = {}
             assigned: Set[int] = set()
             participants_copy: List[int] = self.participants[:]
             random.shuffle(participants_copy)
 
             for room in range(1, self.total_rooms + 1):
+                round_assignment[room] = []
                 current_size: int = self._get_room_size(room)
 
                 while len(round_assignment[room]) < current_size:
@@ -212,21 +211,21 @@ class OptimizationAssigner(BaseAssigner):
         super().__init__(total_participants, total_rooms, total_rounds)
         self.history: Set[tuple] = set()
 
-    def _generate_random_assignment(self) -> Dict[str, List[int]]:
+    def _generate_random_assignment(self) -> Dict[int, List[int]]:
         """ランダムな割り当てを生成"""
         participants = self.participants[:]
         random.shuffle(participants)
         assignment = {
-            f"room_{j+1}": participants[j * self.room_size: (j + 1) * self.room_size]
+            j+1: participants[j * self.room_size: (j + 1) * self.room_size]
             for j in range(self.total_rooms)
         }
         
         remainder = participants[self.total_rooms * self.room_size:]
         for i, participant in enumerate(remainder):
-            assignment[f"room_{(i % self.total_rooms) + 1}"].append(participant)
+            assignment[(i % self.total_rooms) + 1].append(participant)
         return assignment
 
-    def _optimize_round(self) -> Dict[str, List[int]]:
+    def _optimize_round(self) -> Dict[int, List[int]]:
         """1ラウンド分の最適化"""
         rooms = list(range(self.total_rooms))
         
@@ -264,13 +263,17 @@ class OptimizationAssigner(BaseAssigner):
         problem.solve()
         
         if problem.status == pulp.LpStatusOptimal:
-            return {f"room_{j+1}": [
+            return {j+1: [
                 i for i in self.participants if pulp.value(x[i, j]) == 1
             ] for j in rooms}
         return None
 
-    def generate_assignments(self) -> List[Dict[str, List[int]]]:
-        """全ラウンドの部屋割り当てを生成"""
+    def generate_assignments(self) -> List[Dict[int, List[int]]]:
+        """全ラウンドの部屋割り当てを生成
+
+        Returns:
+            List[Dict[int, List[int]]]: 各ラウンドの部屋割り当て結果
+        """
         assignments = []
         
         # 第1ラウンド: ランダム割当
