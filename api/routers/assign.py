@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from api.schemas.assign import AssignRequest, AssignResponse
-from api.services.assigner import GreedyAssigner, RandomAssigner
+from api.services.assigner import GreedyAssigner, RandomAssigner, OptimizationAssigner
 from api.validators.assign import validate_assignment_request
 
 router = APIRouter(prefix="/assign", tags=["assign"])
@@ -21,6 +21,7 @@ async def assign_greedy(request: AssignRequest) -> AssignResponse:
         )
         assignments = assigner.generate_assignments()
         return AssignResponse(assignments=assignments)
+    # FastAPI のエラーハンドリング
     except HTTPException:
         raise
     except Exception:
@@ -36,6 +37,27 @@ async def assign_random(request: AssignRequest) -> AssignResponse:
             rounds=request.rounds,
         )
         assigner = RandomAssigner(
+            total_participants=request.participants,
+            total_rooms=request.rooms,
+            total_rounds=request.rounds,
+        )
+        assignments = assigner.generate_assignments()
+        return AssignResponse(assignments=assignments)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="内部サーバーエラーが発生しました")
+
+
+@router.post("/optimization", response_model=AssignResponse)
+async def assign_optimization(request: AssignRequest) -> AssignResponse:
+    try:
+        validate_assignment_request(
+            participants=request.participants,
+            rooms=request.rooms,
+            rounds=request.rounds,
+        )
+        assigner = OptimizationAssigner(
             total_participants=request.participants,
             total_rooms=request.rooms,
             total_rounds=request.rounds,

@@ -10,7 +10,7 @@ This project provides an API designed to facilitate group assignments in seminar
 - Offer two assignment algorithms:
   - Random assignment
   - Greedy assignment
-  - (Planned) Combinatorial optimization assignment
+  - Combinatorial optimization assignment
 
 ## Technical Stack
 - Language: Python 3.11
