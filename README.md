@@ -14,7 +14,7 @@ This project provides an API to optimize grouping in seminars and study sessions
  
 ### Comninatorial Optimization
 
-#### Variables
+#### Decision Variables
 
 - $x_{i, j, k}$: Whether participant $i$ is assigned to room $j$ in round $k$ (0 or 1).
 - $y_{i_{1}, i_{2}, j, k}$: Whether participants $i_{1}$ and $i_{2}$ are together in room $j$ in round $k$ (0 or 1).
