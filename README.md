@@ -23,10 +23,9 @@ This project provides an API to optimize grouping in seminars and study sessions
 
 Minimize the total number of times a given pair of participants is assigned to the same room across all rounds and rooms.
 
-$$\text{Minimize } \sum_{k=1}^{T} \sum_{j=1}^{R} \sum_{i_1 < i_2} y_{i_{1}, i_{2}, j, k}$$
+$$\text{Minimize} \sum_{k=1}^{T} \sum_{j=1}^{R} \sum_{i_1 < i_2} y_{i_{1}, i_{2}, j, k}$$
 
 Let:
-
 - $N$: Total number of participants
 - $T$: Number of rounds (total number of groupings to be performed)
 - $R$: Number of rooms
@@ -56,6 +55,12 @@ To reduce the computation time, which becomes very long when optimizing all roun
 
 - The initial round is assigned randomly.
 - From the second round onward, optimization is performed for each round individually, using the assignment results from previous rounds.
+  - The objective function is implemented as a problem of minimizing the overlap of pairs that have been in the same room in the past.
+  - Let: $h_{i_1,i_2}$ be the past pair history (1: same room in the past, 0: not in the same room).
+
+$$\text{Minimize} \sum_{j=1}^{R} \sum_{(i_{1},i_{2}) \in pairs} h_{i_{1},i_{2}} \cdot y_{i_{1},i_{2},j}$$
+
+
 
 ## Technical Stack
 - Language: Python 3.11
