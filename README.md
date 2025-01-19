@@ -12,7 +12,7 @@ This project provides an API to optimize grouping in seminars and study sessions
   - Greedy assignment
   - Combinatorial optimization assignment
  
-### Comninatorial Optimization
+### Combinatorial Optimization
 
 #### Decision Variables
 
