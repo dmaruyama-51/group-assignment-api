@@ -27,7 +27,7 @@ jobs:
         run: curl -sSL https://install.python-poetry.org | python3 -
 
       - name: Install devdependencies
-        run: poetry install --without dev
+        run: poetry install --without dev --no-root
 
       - name: Run Ruff (lint)
         run: poetry run ruff check --output-format=github .
