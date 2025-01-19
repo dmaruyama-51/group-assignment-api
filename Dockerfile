@@ -11,7 +11,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false
 
 # 依存関係のインストール
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry install --without dev --no-root --no-interaction --no-ansi
 
 # アプリケーションのソースコードをコピー
 COPY api/ ./api/
